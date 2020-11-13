@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -30,7 +31,7 @@ const (
 )
 
 // Generate executes a function that will return a dash-separated password of length and kind
-func Generate(length uint8) []byte {
+func Generate(length uint8) ([]byte, error) {
 	seq := []byte{}
 	switch length {
 	case L8, L16, L32, L64:
@@ -43,9 +44,11 @@ func Generate(length uint8) []byte {
 			seq = append(seq, generateRandomSequence(5)...)
 			seq = append(seq, '-')
 		}
+	default:
+		return nil, fmt.Errorf("Length not supported")
 	}
 
-	return seq[:len(seq)-1]
+	return seq[:len(seq)-1], nil
 }
 
 func generateRandomSequence(length uint8) []byte {
