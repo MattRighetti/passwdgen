@@ -1,4 +1,4 @@
-package main
+package passwdgen
 
 import (
 	"math/rand"
