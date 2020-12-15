@@ -1,8 +1,10 @@
-package generator
+package main
 
 import (
 	"fmt"
 	"math/rand"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -10,70 +12,88 @@ const (
 	// LENGTH
 
 	// L8 length 8
-	L8 = uint8(8)
+	L8 = int(8)
 	// L10 length 10
-	L10 = uint8(10)
+	L10 = int(10)
 	// L15 length 15
-	L15 = uint8(15)
+	L15 = int(15)
 	// L16 length 16
-	L16 = uint8(16)
+	L16 = int(16)
 	// L20 length 20
-	L20 = uint8(20)
+	L20 = int(20)
 	// L32 length 32
-	L32 = uint8(32)
+	L32 = int(32)
 	// L64 length 64
-	L64 = uint8(64)
-
-	// KINDS
-
-	DashSeparated = "ds"
-	Normal        = "n"
+	L64 = int(64)
 )
 
 // Generate executes a function that will return a dash-separated password of length and kind
-func Generate(length uint8) ([]byte, error) {
-	seq := []byte{}
+func Generate() (seq []rune, err error) {
+	if config.Dashed {
+		seq, err = generateDashedPassword(config.Length)
+	} else {
+		seq = generatePassword(config.Length)
+	}
+
+	return
+}
+
+func generateDashedPassword(length int) (seq []rune, err error) {
 	switch length {
 	case L8, L16, L32, L64:
-		for i := 0; i < int(length)/4; i++ {
+		for i := 0; i < length/4; i++ {
 			seq = append(seq, generateRandomSequence(4)...)
 			seq = append(seq, '-')
 		}
 	case L10, L15, L20:
-		for i := 0; i < int(length)/5; i++ {
+		for i := 0; i < length/5; i++ {
 			seq = append(seq, generateRandomSequence(5)...)
 			seq = append(seq, '-')
 		}
 	default:
-		return nil, fmt.Errorf("Length not supported")
+		err = fmt.Errorf("Length not supported")
+		return
 	}
 
-	return seq[:len(seq)-1], nil
+	seq = seq[:len(seq)-1]
+
+	return
 }
 
-func generateRandomSequence(length uint8) []byte {
-	seq := make([]byte, length)
-	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < len(seq); i++ {
-		seq[i] = pickRandom(rand.Int31n(3), rand.Int31())
-	}
+func generatePassword(length int) []rune {
+	return generateRandomSequence(length)
+}
 
+func generateRandomSequence(length int) []rune {
+	seq := make([]rune, length)
+	rand.Seed(time.Now().UnixNano())
+	var n int
+	for i := 0; i < length; i++ {
+		n = rand.Intn(len(config.Alphabet))
+		seq[i] = config.Alphabet[n]
+	}
 	return seq
 }
 
-func pickRandom(i int32, j int32) byte {
-	numbers := []byte{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-	letters := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
-	upperLetters := []byte{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
-
-	matrix := [][]byte{numbers, letters, upperLetters}
-
-	var rByte byte
-	if i == 0 {
-		rByte = matrix[0][j%10]
-	} else {
-		rByte = matrix[i][j%26]
+func main() {
+	switch len(os.Args) {
+	case 2:
+		length, _ := strconv.Atoi(os.Args[1])
+		config = newConfiguration(int(length), true, &defaultAlphabet)
+	case 3:
+		length, _ := strconv.Atoi(os.Args[1])
+		dashed, _ := strconv.ParseBool(os.Args[2])
+		config = newConfiguration(int(length), dashed, &defaultAlphabet)
+	case 4:
+		length, _ := strconv.Atoi(os.Args[1])
+		dashed, _ := strconv.ParseBool(os.Args[2])
+		alphabet := []rune(os.Args[3])
+		config = newConfiguration(int(length), dashed, &alphabet)
+	default:
+		config = newConfiguration(20, true, &defaultAlphabet)
 	}
 
-	return rByte
+	pass, _ := Generate()
+
+	fmt.Printf("%s\n", string(pass))
 }
