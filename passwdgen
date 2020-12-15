@@ -1,0 +1,25 @@
+#!/bin/bash
+
+passwdgen() {
+    go run generator.go configuration.go \
+        $LENGTH \
+        $DASHED
+}
+
+LENGTH=8
+DASHED=true
+
+while [[ $# -gt 0 ]]; do
+optkey="$1"
+
+case $optkey in
+  -l|--length)
+    LENGTH="$2";shift;shift;;
+  --dashed)
+    DASHED="$2";shift;shift;;
+  *) # unknown option
+    echo "$1 is a not supported option"; exit 1;;
+esac
+done
+
+passwdgen
